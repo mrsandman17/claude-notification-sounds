@@ -23,8 +23,7 @@ Add sound files (MP3 or WAV) to the appropriate category subdirectories:
 sounds/
 ├── session-start/       # Played when Claude starts
 ├── user-prompt-submit/  # Played when you submit a prompt
-├── notification/        # Played when Claude needs permission
-└── stop/                # Played when Claude finishes work
+└── notification/        # Played when Claude needs permission
 ```
 
 **Add your sound files:**
@@ -38,8 +37,6 @@ cp /path/to/your/sounds/submit1.mp3 sounds/user-prompt-submit/
 cp /path/to/your/sounds/submit2.mp3 sounds/user-prompt-submit/
 
 cp /path/to/your/sounds/alert.mp3 sounds/notification/
-
-cp /path/to/your/sounds/complete.mp3 sounds/stop/
 ```
 
 **Tips:**
@@ -71,19 +68,17 @@ The install script automatically:
    - `session-start/`
    - `user-prompt-submit/`
    - `notification/`
-   - `stop/`
 2. Copies sound files from each category to the corresponding `~/.claude/sounds/` subdirectory
 3. Installs the plugin to `~/.claude/plugins/cache/custom/notification-sounds/1.0.0/`
-4. **Non-destructively** adds hooks to `~/.claude/settings.json`:
+4. Configures hooks in `~/.claude/settings.json`:
    - **SessionStart**: Plays when Claude starts (random from session-start/)
    - **UserPromptSubmit**: Plays when you submit a prompt (random from user-prompt-submit/)
    - **Notification**: Plays when Claude needs permission (random from notification/)
-   - **Stop**: Plays when Claude finishes work (random from stop/)
-   - **Preserves existing hooks** - appends rather than replaces
-   - **Skips if already installed** - safe to run multiple times
+   - **Prevents duplicates** - removes old notification sound hooks before adding new ones
+   - **Safe to re-run** - replaces old notification sound hooks with current configuration
 5. Enables the plugin in your settings
 
-**Important:** The installer preserves all your existing settings and hooks. It only adds the notification sound hooks without removing anything.
+**Important:** The installer removes old notification sound hooks to prevent duplicates, but preserves all other hooks.
 
 ## 🎯 How It Works
 
@@ -92,7 +87,6 @@ When configured, Claude Code plays a random sound from the appropriate category 
 - **SessionStart**: When Claude starts → plays random sound from `~/.claude/sounds/session-start/`
 - **UserPromptSubmit**: When you submit a prompt → plays random sound from `~/.claude/sounds/user-prompt-submit/`
 - **Notification**: When Claude needs permission → plays random sound from `~/.claude/sounds/notification/`
-- **Stop**: When Claude finishes → plays random sound from `~/.claude/sounds/stop/`
 
 If a category has only one sound, it plays that sound every time. If multiple sounds exist, it randomly picks one.
 
@@ -118,12 +112,6 @@ The plugin uses macOS's built-in `afplay` command to play sounds.
 - Notification chimes
 - Prompt sounds
 
-**Stop** (Work complete):
-- Completion sounds
-- Success chimes
-- Game character completion sounds
-- "Done" acknowledgments
-
 ## 🛠️ Customization
 
 After installation, you can customize by editing `~/.claude/settings.json`:
@@ -132,10 +120,11 @@ After installation, you can customize by editing `~/.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "Stop": [{
+    "Notification": [{
+      "matcher": "permission_prompt",
       "hooks": [{
         "type": "command",
-        "command": "afplay ~/.claude/sounds/stop/your_sound.mp3"
+        "command": "afplay ~/.claude/sounds/notification/your_sound.mp3"
       }]
     }]
   }
@@ -159,16 +148,16 @@ Simply remove or comment out that hook section in `~/.claude/settings.json`
 - Verify files exist: `ls ~/.claude/sounds/*/`
 - Make sure category folders have sound files in them
 
-**Wrong sounds playing?**
+**Wrong sounds playing or multiple sounds playing?**
 - Check that sound files are in the correct category subdirectory
 - Session start sounds go in `~/.claude/sounds/session-start/`
 - User prompt sounds go in `~/.claude/sounds/user-prompt-submit/`
 - Notification sounds go in `~/.claude/sounds/notification/`
-- Stop sounds go in `~/.claude/sounds/stop/`
+- If you hear multiple sounds, re-run the installer to clean up duplicate hooks
 
 **Plugin not working?**
 - Check `~/.claude/settings.json` has `"notification-sounds@custom": true`
-- Verify hooks are configured for all 4 events (SessionStart, UserPromptSubmit, Notification, Stop)
+- Verify hooks are configured for all 3 events (SessionStart, UserPromptSubmit, Notification)
 
 **Install script fails?**
 - Make sure you added sound files to category subdirectories before running

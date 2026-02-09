@@ -14,7 +14,7 @@ echo "🔊 Installing Custom Notification Sounds Plugin for Claude Code..."
 echo ""
 
 # Check if sound categories exist and have files
-CATEGORIES=("session-start" "user-prompt-submit" "notification" "stop")
+CATEGORIES=("session-start" "user-prompt-submit" "notification")
 TOTAL_SOUND_COUNT=0
 
 for category in "${CATEGORIES[@]}"; do
@@ -31,7 +31,6 @@ if [ "$TOTAL_SOUND_COUNT" -eq 0 ]; then
     echo "  • sounds/session-start/ - Played when Claude starts"
     echo "  • sounds/user-prompt-submit/ - Played when you submit a prompt"
     echo "  • sounds/notification/ - Played when Claude needs permission"
-    echo "  • sounds/stop/ - Played when Claude finishes"
     echo ""
     echo "See README.md for examples and instructions."
     echo ""
@@ -114,25 +113,20 @@ hook_configs = {
     'Notification': {
         'category': 'notification',
         'matcher': 'permission_prompt'
-    },
-    'Stop': {
-        'category': 'stop',
-        'matcher': None  # No matcher for Stop
     }
 }
 
-# Helper function to check if our hook already exists
-def has_notification_sound_hook(hooks_list, category):
-    if not hooks_list:
+# Helper function to check if a hook is a notification sound hook
+def is_notification_sound_hook(hook_group):
+    if 'hooks' not in hook_group:
         return False
-    for hook_group in hooks_list:
-        if 'hooks' in hook_group:
-            for hook in hook_group['hooks']:
-                if hook.get('type') == 'command' and f'~/.claude/sounds/{category}' in hook.get('command', ''):
-                    return True
+    for hook in hook_group['hooks']:
+        cmd = hook.get('command', '')
+        if hook.get('type') == 'command' and '~/.claude/sounds/' in cmd and 'afplay' in cmd:
+            return True
     return False
 
-# Configure each hook type
+# Configure each hook type - REPLACE existing notification sound hooks to prevent duplicates
 for hook_name, config in hook_configs.items():
     category = config['category']
     matcher = config['matcher']
@@ -140,43 +134,31 @@ for hook_name, config in hook_configs.items():
     # Command to play random sound from category folder
     sound_cmd = f'afplay "$(find ~/.claude/sounds/{category} \\( -name \'*.mp3\' -o -name \'*.wav\' \\) | sort -R | head -n 1)"'
 
+    # Build hook configuration
+    hook_config = {
+        'hooks': [{
+            'type': 'command',
+            'command': sound_cmd
+        }]
+    }
+
+    # Add matcher if specified
+    if matcher:
+        hook_config['matcher'] = matcher
+
     # Initialize hook list if not present
     if hook_name not in settings['hooks']:
         settings['hooks'][hook_name] = []
 
-    # Check if we need to add this hook
-    needs_hook = False
-    if matcher:
-        # For hooks with matchers (like Notification), check if our specific matcher exists
-        matcher_exists = False
-        for hook_group in settings['hooks'][hook_name]:
-            if hook_group.get('matcher') == matcher:
-                if has_notification_sound_hook([hook_group], category):
-                    matcher_exists = True
-                    break
-        needs_hook = not matcher_exists
-    else:
-        # For hooks without matchers, just check if our category hook exists
-        needs_hook = not has_notification_sound_hook(settings['hooks'][hook_name], category)
+    # Remove old notification sound hooks to prevent duplicates
+    settings['hooks'][hook_name] = [
+        h for h in settings['hooks'][hook_name]
+        if not is_notification_sound_hook(h)
+    ]
 
-    if needs_hook:
-        # Build hook configuration
-        hook_config = {
-            'hooks': [{
-                'type': 'command',
-                'command': sound_cmd
-            }]
-        }
-
-        # Add matcher if specified
-        if matcher:
-            hook_config['matcher'] = matcher
-
-        # Append to existing hooks (non-destructive)
-        settings['hooks'][hook_name].append(hook_config)
-        print(f"✅ Added {hook_name} hook")
-    else:
-        print(f"ℹ️  {hook_name} hook already configured, skipping")
+    # Add our hook
+    settings['hooks'][hook_name].append(hook_config)
+    print(f"✅ Configured {hook_name} hook")
 
 # Write updated settings
 with open(settings_file, 'w') as f:
@@ -191,13 +173,12 @@ echo ""
 echo "🔊 Plugin configured with $TOTAL_SOUND_COUNT custom sounds"
 echo "   • Plugin: notification-sounds@custom"
 echo "   • Sounds directory: $SOUNDS_DIR"
-echo "   • Categories: session-start, user-prompt-submit, notification, stop"
+echo "   • Categories: session-start, user-prompt-submit, notification"
 echo ""
 echo "You'll now hear sounds when:"
 echo "   • SessionStart: Claude is ready (session-start sounds)"
 echo "   • UserPromptSubmit: You submit a prompt (user-prompt-submit sounds)"
 echo "   • Notification: Claude needs permission (notification sounds)"
-echo "   • Stop: Claude finishes work (stop sounds)"
 echo ""
 echo "💡 To customize: edit $SETTINGS_FILE"
 echo "💡 To add more sounds: copy files to $SOUNDS_DIR/<category>/"
