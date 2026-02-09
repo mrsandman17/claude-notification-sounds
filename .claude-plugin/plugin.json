@@ -1,0 +1,22 @@
+{
+  "name": "notification-sounds",
+  "version": "1.0.0",
+  "description": "Add custom notification sounds to Claude Code. Play audio when Claude finishes tasks or needs your attention.",
+  "author": {
+    "name": "amitz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrsandman17/claude-notification-sounds"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "notifications",
+    "sounds",
+    "audio",
+    "hooks",
+    "alerts"
+  ],
+  "license": "MIT"
+}

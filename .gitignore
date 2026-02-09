@@ -1,0 +1,9 @@
+.DS_Store
+*.log
+node_modules/
+.idea/
+
+# Don't track sound files (users add their own)
+sounds/*.mp3
+sounds/*.wav
+sounds/*.ogg
