@@ -13,12 +13,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "🔊 Installing Custom Notification Sounds Plugin for Claude Code..."
 echo ""
 
-# Check if there are any sound files
-SOUND_COUNT=$(find "$SCRIPT_DIR/sounds" -name "*.mp3" 2>/dev/null | wc -l | tr -d ' ')
-if [ "$SOUND_COUNT" -eq 0 ]; then
-    echo "⚠️  No MP3 files found in sounds/ directory!"
+# Check if sound categories exist and have files
+CATEGORIES=("session-start" "user-prompt-submit" "notification" "stop")
+TOTAL_SOUND_COUNT=0
+
+for category in "${CATEGORIES[@]}"; do
+    if [ -d "$SCRIPT_DIR/sounds/$category" ]; then
+        COUNT=$(find "$SCRIPT_DIR/sounds/$category" -name "*.mp3" -o -name "*.wav" 2>/dev/null | wc -l | tr -d ' ')
+        TOTAL_SOUND_COUNT=$((TOTAL_SOUND_COUNT + COUNT))
+    fi
+done
+
+if [ "$TOTAL_SOUND_COUNT" -eq 0 ]; then
+    echo "⚠️  No sound files found in sounds/ subdirectories!"
     echo ""
-    echo "Please add your MP3 sound files to the sounds/ directory first."
+    echo "Please add your sound files to these subdirectories:"
+    echo "  • sounds/session-start/ - Played when Claude starts"
+    echo "  • sounds/user-prompt-submit/ - Played when you submit a prompt"
+    echo "  • sounds/notification/ - Played when Claude needs permission"
+    echo "  • sounds/stop/ - Played when Claude finishes"
+    echo ""
     echo "See README.md for examples and instructions."
     echo ""
     exit 1
@@ -28,15 +42,29 @@ fi
 mkdir -p "$PLUGIN_DIR"
 mkdir -p "$SOUNDS_DIR"
 
+# Create category subdirectories
+for category in "${CATEGORIES[@]}"; do
+    mkdir -p "$SOUNDS_DIR/$category"
+done
+
 # Copy plugin files
 echo "📦 Copying plugin files..."
 cp -r "$SCRIPT_DIR"/.claude-plugin "$PLUGIN_DIR/"
 cp "$SCRIPT_DIR"/README.md "$PLUGIN_DIR/"
 
-# Copy sound files
+# Copy sound files by category
 echo "🔊 Installing sound files..."
-cp "$SCRIPT_DIR"/sounds/*.mp3 "$SOUNDS_DIR/" 2>/dev/null
-echo "✅ Installed $SOUND_COUNT sound files to $SOUNDS_DIR"
+for category in "${CATEGORIES[@]}"; do
+    if [ -d "$SCRIPT_DIR/sounds/$category" ]; then
+        COUNT=$(find "$SCRIPT_DIR/sounds/$category" \( -name "*.mp3" -o -name "*.wav" \) 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$COUNT" -gt 0 ]; then
+            cp "$SCRIPT_DIR/sounds/$category"/*.mp3 "$SOUNDS_DIR/$category/" 2>/dev/null || true
+            cp "$SCRIPT_DIR/sounds/$category"/*.wav "$SOUNDS_DIR/$category/" 2>/dev/null || true
+            echo "  ✅ $category: $COUNT sound(s)"
+        fi
+    fi
+done
+echo "✅ Installed $TOTAL_SOUND_COUNT sound files to $SOUNDS_DIR"
 
 # Check if settings.json exists
 if [ ! -f "$SETTINGS_FILE" ]; then
@@ -69,64 +97,73 @@ if 'enabledPlugins' not in settings:
     settings['enabledPlugins'] = {}
 settings['enabledPlugins']['notification-sounds@custom'] = True
 
-# Configure hooks with randomized sounds
+# Configure hooks with category-based sounds
 if 'hooks' not in settings:
     settings['hooks'] = {}
 
-# Random sound command (macOS compatible)
-random_sound_cmd = 'afplay "$(find ~/.claude/sounds -name \'*.mp3\' | sort -R | head -n 1)"'
+# Define hooks with their category folders
+hook_configs = {
+    'SessionStart': {
+        'category': 'session-start',
+        'matcher': None  # No matcher for SessionStart
+    },
+    'UserPromptSubmit': {
+        'category': 'user-prompt-submit',
+        'matcher': None  # No matcher for UserPromptSubmit
+    },
+    'Notification': {
+        'category': 'notification',
+        'matcher': 'permission_prompt'
+    },
+    'Stop': {
+        'category': 'stop',
+        'matcher': None  # No matcher for Stop
+    }
+}
 
-# Helper function to check if our hook already exists
-def has_notification_sound_hook(hooks_list):
-    if not hooks_list:
+# Helper function to check if a hook is a notification sound hook
+def is_notification_sound_hook(hook_group):
+    if 'hooks' not in hook_group:
         return False
-    for hook_group in hooks_list:
-        if 'hooks' in hook_group:
-            for hook in hook_group['hooks']:
-                if hook.get('type') == 'command' and '~/.claude/sounds' in hook.get('command', ''):
-                    return True
+    for hook in hook_group['hooks']:
+        cmd = hook.get('command', '')
+        if hook.get('type') == 'command' and '~/.claude/sounds/' in cmd and 'afplay' in cmd:
+            return True
     return False
 
-# Configure Stop hook (only if not already present)
-if 'Stop' not in settings['hooks']:
-    settings['hooks']['Stop'] = []
+# Configure each hook type - REPLACE existing notification sound hooks to prevent duplicates
+for hook_name, config in hook_configs.items():
+    category = config['category']
+    matcher = config['matcher']
 
-if not has_notification_sound_hook(settings['hooks']['Stop']):
-    # Append our hook to existing hooks (non-destructive)
-    settings['hooks']['Stop'].append({
+    # Command to play random sound from category folder
+    sound_cmd = f'afplay "$(find ~/.claude/sounds/{category} \\( -name \'*.mp3\' -o -name \'*.wav\' \\) | sort -R | head -n 1)"'
+
+    # Build hook configuration
+    hook_config = {
         'hooks': [{
             'type': 'command',
-            'command': random_sound_cmd
+            'command': sound_cmd
         }]
-    })
-    print("✅ Added Stop hook")
-else:
-    print("ℹ️  Stop hook already configured, skipping")
+    }
 
-# Configure Notification hook (only if not already present)
-if 'Notification' not in settings['hooks']:
-    settings['hooks']['Notification'] = []
+    # Add matcher if specified
+    if matcher:
+        hook_config['matcher'] = matcher
 
-# Check if our notification hook exists
-notification_exists = False
-for hook_group in settings['hooks']['Notification']:
-    if hook_group.get('matcher') == 'permission_prompt':
-        if has_notification_sound_hook([hook_group]):
-            notification_exists = True
-            break
+    # Initialize hook list if not present
+    if hook_name not in settings['hooks']:
+        settings['hooks'][hook_name] = []
 
-if not notification_exists:
-    # Append our hook to existing hooks (non-destructive)
-    settings['hooks']['Notification'].append({
-        'matcher': 'permission_prompt',
-        'hooks': [{
-            'type': 'command',
-            'command': random_sound_cmd
-        }]
-    })
-    print("✅ Added Notification hook")
-else:
-    print("ℹ️  Notification hook already configured, skipping")
+    # Remove old notification sound hooks to prevent duplicates
+    settings['hooks'][hook_name] = [
+        h for h in settings['hooks'][hook_name]
+        if not is_notification_sound_hook(h)
+    ]
+
+    # Add our hook
+    settings['hooks'][hook_name].append(hook_config)
+    print(f"✅ Configured {hook_name} hook")
 
 # Write updated settings
 with open(settings_file, 'w') as f:
@@ -138,16 +175,18 @@ PYTHON_SCRIPT
 echo ""
 echo "✅ Installation complete!"
 echo ""
-echo "🔊 Plugin configured with $SOUND_COUNT custom sounds"
+echo "🔊 Plugin configured with $TOTAL_SOUND_COUNT custom sounds"
 echo "   • Plugin: notification-sounds@custom"
 echo "   • Sounds directory: $SOUNDS_DIR"
-echo "   • Hooks: Stop and Notification events"
+echo "   • Categories: session-start, user-prompt-submit, notification, stop"
 echo ""
-echo "You'll now hear random sounds when:"
-echo "   • Claude finishes a task (Stop event)"
-echo "   • Claude needs permission (Notification event)"
+echo "You'll now hear sounds when:"
+echo "   • SessionStart: Claude is ready (session-start sounds)"
+echo "   • UserPromptSubmit: You submit a prompt (user-prompt-submit sounds)"
+echo "   • Notification: Claude needs permission (notification sounds)"
+echo "   • Stop: Claude finishes work (stop sounds)"
 echo ""
 echo "💡 To customize: edit $SETTINGS_FILE"
-echo "💡 To add more sounds: copy MP3 files to $SOUNDS_DIR"
+echo "💡 To add more sounds: copy files to $SOUNDS_DIR/<category>/"
 echo ""
 echo "Enjoy! 🎉"
