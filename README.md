@@ -21,59 +21,40 @@ Add sound files (MP3 or WAV) to the appropriate category subdirectories:
 
 ```
 sounds/
-├── session-start/       # "Ready to work", "Something need doing", "Yes me lord"
-├── user-prompt-submit/  # "Okeydokey", "Righto"
-├── notification/        # "More work"
-└── stop/                # "Me busy leave me alone"
+├── session-start/       # Played when Claude starts
+├── user-prompt-submit/  # Played when you submit a prompt
+├── notification/        # Played when Claude needs permission
+└── stop/                # Played when Claude finishes work
 ```
 
-**Option A: Use Your Own Sounds**
+**Add your sound files:**
 
 ```bash
-# Add sounds for each category
-cp ready_to_work.mp3 sounds/session-start/
-cp something_need_doing.mp3 sounds/session-start/
-cp yes_me_lord.mp3 sounds/session-start/
+# Copy sound files to each category
+cp /path/to/your/sounds/start1.mp3 sounds/session-start/
+cp /path/to/your/sounds/start2.mp3 sounds/session-start/
 
-cp okeydokey.mp3 sounds/user-prompt-submit/
-cp righto.mp3 sounds/user-prompt-submit/
+cp /path/to/your/sounds/submit1.mp3 sounds/user-prompt-submit/
+cp /path/to/your/sounds/submit2.mp3 sounds/user-prompt-submit/
 
-cp more_work.mp3 sounds/notification/
+cp /path/to/your/sounds/alert.mp3 sounds/notification/
 
-cp me_busy.mp3 sounds/stop/
+cp /path/to/your/sounds/complete.mp3 sounds/stop/
 ```
 
-**Option B: Download Warcraft 3 Peon Sounds**
-
-Ask Claude Code (or any AI assistant):
-
-```
-Please help me download these Warcraft 3 Peon sound files and organize them:
-
-Session Start sounds (save to sounds/session-start/):
-- "Ready to work" → ready_to_work.mp3
-- "Something need doing?" → something_need_doing.mp3
-- "Yes me lord" → yes_me_lord.mp3
-
-User Prompt Submit sounds (save to sounds/user-prompt-submit/):
-- "Okey dokey" → okeydokey.mp3
-- "Righto" → righto.mp3
-
-Notification sound (save to sounds/notification/):
-- "More work" → more_work.mp3
-
-Stop sound (save to sounds/stop/):
-- "Me busy, leave me alone" → me_busy.mp3
-```
+**Tips:**
+- Add multiple files per category for variety (one will be randomly selected)
+- You can skip categories you don't want sounds for
+- Supports both MP3 and WAV formats
 
 ### Step 3: Verify Sound Files
 
 ```bash
-# Check that you have sounds in each category
+# Check that you have sounds in the categories you want
 ls sounds/*/
 ```
 
-You should see files in each subdirectory. If not, go back to Step 2.
+You should see your sound files in the subdirectories. At least one category must have files.
 
 ### Step 4: Run the Installer
 
@@ -120,28 +101,28 @@ The plugin uses macOS's built-in `afplay` command to play sounds.
 ## 🎨 Sound Ideas by Category
 
 **Session Start** (Claude is ready):
-- "Ready to work" / "Something need doing?" / "Yes me lord" (Warcraft Peon)
-- "I live to serve" (Protoss Probe)
-- "GLaDOS: Good morning"
-- Custom: "Let's do this" / "Ready when you are"
+- Greeting sounds or "ready" acknowledgments
+- Game character startup sounds
+- Custom voice recordings
+- Startup chimes
 
 **User Prompt Submit** (You give a command):
-- "Okeydokey" / "Righto" (Warcraft Peon)
-- "Affirmative" / "Roger roger" (StarCraft)
-- "On it" / "You got it"
-- Short confirmation sounds
+- Acknowledgment sounds
+- Confirmation beeps or chimes
+- Game character "yes" or "affirmative" sounds
+- Short positive sounds
 
 **Notification** (Needs permission):
-- "More work?" (Warcraft Peon)
-- "Awaiting orders" / "What now?"
-- Alert/notification chimes
-- "Your attention please"
+- Alert or attention sounds
+- Question sounds
+- Notification chimes
+- Prompt sounds
 
 **Stop** (Work complete):
-- "Me busy, leave me alone" / "Work work" (Warcraft Peon)
-- "Jobs done" / "Complete"
+- Completion sounds
 - Success chimes
-- "All done" / "Finished"
+- Game character completion sounds
+- "Done" acknowledgments
 
 ## 🛠️ Customization
 
@@ -154,7 +135,7 @@ After installation, you can customize by editing `~/.claude/settings.json`:
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "afplay ~/.claude/sounds/stop/specific_sound.mp3"
+        "command": "afplay ~/.claude/sounds/stop/your_sound.mp3"
       }]
     }]
   }
@@ -163,8 +144,8 @@ After installation, you can customize by editing `~/.claude/settings.json`:
 
 **Add more sounds to a category:**
 ```bash
-# Add another session-start sound
-cp new_ready_sound.mp3 ~/.claude/sounds/session-start/
+# Add more sounds to any category
+cp your_sound.mp3 ~/.claude/sounds/session-start/
 ```
 
 **Remove a category** (if you don't want sounds for an event):
@@ -174,7 +155,7 @@ Simply remove or comment out that hook section in `~/.claude/settings.json`
 
 **No sound playing?**
 - Check your volume is on
-- Test manually: `afplay ~/.claude/sounds/session-start/ready_to_work.mp3`
+- Test manually: `afplay ~/.claude/sounds/session-start/your_sound.mp3`
 - Verify files exist: `ls ~/.claude/sounds/*/`
 - Make sure category folders have sound files in them
 

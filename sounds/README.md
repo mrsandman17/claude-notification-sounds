@@ -21,20 +21,20 @@ sounds/
 ## Examples
 
 **Session Start** (Claude is ready):
-- ready_to_work.mp3
-- something_need_doing.mp3
-- yes_me_lord.mp3
+- Greeting or ready acknowledgment sounds
+- Multiple files for variety
 
 **User Prompt Submit** (You give a command):
-- okeydokey.mp3
-- righto.mp3
+- Confirmation or acknowledgment sounds
+- Multiple files for variety
 
 **Notification** (Needs permission):
-- more_work.mp3
+- Alert or attention sounds
+- Single or multiple files
 
 **Stop** (Work complete):
-- me_busy.mp3
-- jobs_done.mp3
+- Completion or success sounds
+- Single or multiple files
 
 ## Sound Ideas
 
