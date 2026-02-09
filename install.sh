@@ -76,22 +76,57 @@ if 'hooks' not in settings:
 # Random sound command (macOS compatible)
 random_sound_cmd = 'afplay "$(find ~/.claude/sounds -name \'*.mp3\' | sort -R | head -n 1)"'
 
-# Configure Stop hook
-settings['hooks']['Stop'] = [{
-    'hooks': [{
-        'type': 'command',
-        'command': random_sound_cmd
-    }]
-}]
+# Helper function to check if our hook already exists
+def has_notification_sound_hook(hooks_list):
+    if not hooks_list:
+        return False
+    for hook_group in hooks_list:
+        if 'hooks' in hook_group:
+            for hook in hook_group['hooks']:
+                if hook.get('type') == 'command' and '~/.claude/sounds' in hook.get('command', ''):
+                    return True
+    return False
 
-# Configure Notification hook
-settings['hooks']['Notification'] = [{
-    'matcher': 'permission_prompt',
-    'hooks': [{
-        'type': 'command',
-        'command': random_sound_cmd
-    }]
-}]
+# Configure Stop hook (only if not already present)
+if 'Stop' not in settings['hooks']:
+    settings['hooks']['Stop'] = []
+
+if not has_notification_sound_hook(settings['hooks']['Stop']):
+    # Append our hook to existing hooks (non-destructive)
+    settings['hooks']['Stop'].append({
+        'hooks': [{
+            'type': 'command',
+            'command': random_sound_cmd
+        }]
+    })
+    print("✅ Added Stop hook")
+else:
+    print("ℹ️  Stop hook already configured, skipping")
+
+# Configure Notification hook (only if not already present)
+if 'Notification' not in settings['hooks']:
+    settings['hooks']['Notification'] = []
+
+# Check if our notification hook exists
+notification_exists = False
+for hook_group in settings['hooks']['Notification']:
+    if hook_group.get('matcher') == 'permission_prompt':
+        if has_notification_sound_hook([hook_group]):
+            notification_exists = True
+            break
+
+if not notification_exists:
+    # Append our hook to existing hooks (non-destructive)
+    settings['hooks']['Notification'].append({
+        'matcher': 'permission_prompt',
+        'hooks': [{
+            'type': 'command',
+            'command': random_sound_cmd
+        }]
+    })
+    print("✅ Added Notification hook")
+else:
+    print("ℹ️  Notification hook already configured, skipping")
 
 # Write updated settings
 with open(settings_file, 'w') as f:

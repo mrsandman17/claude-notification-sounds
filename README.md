@@ -66,10 +66,14 @@ You should see your MP3 files listed. If not, go back to Step 2.
 The install script automatically:
 1. Copies all MP3 files from `sounds/` to `~/.claude/sounds/`
 2. Installs the plugin to `~/.claude/plugins/cache/custom/notification-sounds/1.0.0/`
-3. Updates `~/.claude/settings.json` to configure hooks for:
+3. **Non-destructively** adds hooks to `~/.claude/settings.json`:
    - **Stop** event: Plays when Claude finishes a task
    - **Notification** event: Plays when Claude needs permission
+   - **Preserves existing hooks** - appends rather than replaces
+   - **Skips if already installed** - safe to run multiple times
 4. Enables the plugin in your settings
+
+**Important:** The installer preserves all your existing settings and hooks. It only adds the notification sound hooks without removing anything.
 
 ## 🎯 How It Works
 
