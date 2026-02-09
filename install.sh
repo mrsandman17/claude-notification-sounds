@@ -14,7 +14,7 @@ echo "🔊 Installing Custom Notification Sounds Plugin for Claude Code..."
 echo ""
 
 # Check if sound categories exist and have files
-CATEGORIES=("session-start" "user-prompt-submit" "notification")
+CATEGORIES=("session-start" "user-prompt-submit" "notification" "stop")
 TOTAL_SOUND_COUNT=0
 
 for category in "${CATEGORIES[@]}"; do
@@ -31,6 +31,7 @@ if [ "$TOTAL_SOUND_COUNT" -eq 0 ]; then
     echo "  • sounds/session-start/ - Played when Claude starts"
     echo "  • sounds/user-prompt-submit/ - Played when you submit a prompt"
     echo "  • sounds/notification/ - Played when Claude needs permission"
+    echo "  • sounds/stop/ - Played when Claude finishes"
     echo ""
     echo "See README.md for examples and instructions."
     echo ""
@@ -113,6 +114,10 @@ hook_configs = {
     'Notification': {
         'category': 'notification',
         'matcher': 'permission_prompt'
+    },
+    'Stop': {
+        'category': 'stop',
+        'matcher': None  # No matcher for Stop
     }
 }
 
@@ -173,12 +178,13 @@ echo ""
 echo "🔊 Plugin configured with $TOTAL_SOUND_COUNT custom sounds"
 echo "   • Plugin: notification-sounds@custom"
 echo "   • Sounds directory: $SOUNDS_DIR"
-echo "   • Categories: session-start, user-prompt-submit, notification"
+echo "   • Categories: session-start, user-prompt-submit, notification, stop"
 echo ""
 echo "You'll now hear sounds when:"
 echo "   • SessionStart: Claude is ready (session-start sounds)"
 echo "   • UserPromptSubmit: You submit a prompt (user-prompt-submit sounds)"
 echo "   • Notification: Claude needs permission (notification sounds)"
+echo "   • Stop: Claude finishes work (stop sounds)"
 echo ""
 echo "💡 To customize: edit $SETTINGS_FILE"
 echo "💡 To add more sounds: copy files to $SOUNDS_DIR/<category>/"
